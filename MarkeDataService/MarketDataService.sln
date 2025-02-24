@@ -5,7 +5,7 @@ VisualStudioVersion = 17.8.34408.163
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MarketDataService.WebAPI", "MarkeDataService.WebAPI\MarketDataService.WebAPI.csproj", "{268BEBAC-C6A0-4ED1-9B76-B613AE9819CD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketDataService.Infrastructure", "..\MarketDataService.Infrastructure\MarketDataService.Infrastructure.csproj", "{959BD087-7EC2-489A-8FFE-0CC7DF0C4FA7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketDataService.Infrastructure", "MarketDataService.Infrastructure\MarketDataService.Infrastructure.csproj", "{959BD087-7EC2-489A-8FFE-0CC7DF0C4FA7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarketDataService.Domain", "MarketDataService.Domain\MarketDataService.Domain.csproj", "{0E40C0D0-D380-4EC5-81AA-0DE88F8CC5D0}"
 EndProject
