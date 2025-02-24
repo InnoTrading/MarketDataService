@@ -7,7 +7,8 @@ namespace MarketDataService.Infrastructure.Extensions
 {
     public static class InfrastructureExtensions
     {
-        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddInfrastructureServices(this IServiceCollection services,
+            IConfiguration configuration)
         {
             services.AddHttpClient();
             string apiKey = configuration["AlphaVantage:ApiKey"]!;
@@ -20,7 +21,7 @@ namespace MarketDataService.Infrastructure.Extensions
             {
                 var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
                 var httpClient = httpClientFactory.CreateClient();
-                return new MarkerDataAdapter(httpClient, apiKey);
+                return new MarketDataAdapter(httpClient, apiKey);
             });
 
             return services;

@@ -4,7 +4,7 @@ using MarketDataService.Domain.Interfaces;
 
 namespace MarketDataService.Application.Services
 {
-    public class MarketDataService(IMarketDataAdapter marketDataAdapter): IMarketDataService
+    public class MarketDataService(IMarketDataAdapter marketDataAdapter) : IMarketDataService
     {
         private readonly IMarketDataAdapter _marketDataAdapter = marketDataAdapter;
 
@@ -13,9 +13,9 @@ namespace MarketDataService.Application.Services
             return await _marketDataAdapter.GetPopularStocksAsync(interval);
         }
 
-       // public async Task<StockDetailsEntity> GetStockDetails(string ticker)
-       // {
-            //return await _marketDataAdapter.GetStockDetailsAsync(ticker);
-        //}
+        public async Task<StockDetailsEntity> GetStockDetailsAsync(string ticker)
+        {
+        return await _marketDataAdapter.GetStockDetailsAsync(ticker);
+        }
     }
 }

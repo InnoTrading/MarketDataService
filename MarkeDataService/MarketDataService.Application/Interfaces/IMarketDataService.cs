@@ -5,6 +5,6 @@ namespace MarketDataService.Application.Interfaces
     public interface IMarketDataService
     {
         Task<List<StockInfoEntity>> GetPopularStocksAsync(string interval);
-       // Task<StockDetailsEntity> GetStockDetailsAsync(string ticker);
+        Task<StockDetailsEntity> GetStockDetailsAsync(string ticker);
     }
 }
