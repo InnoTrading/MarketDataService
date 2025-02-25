@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <UserSecretsId>aa0a26a5-9eb3-44ba-81c6-5e1c32666e04</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

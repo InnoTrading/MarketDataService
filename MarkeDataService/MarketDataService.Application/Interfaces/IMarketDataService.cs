@@ -1,10 +1,9 @@
-﻿using MarketDataService.Domain.Entities;
+﻿using MarketDataService.Domain.DTOs;
 
-namespace MarketDataService.Application.Interfaces
+namespace MarketDataService.Application.Interfaces;
+
+public interface IMarketDataService
 {
-    public interface IMarketDataService
-    {
-        Task<List<StockInfoEntity>> GetPopularStocksAsync(string interval);
-        Task<StockDetailsEntity> GetStockDetailsAsync(string ticker);
-    }
+    Task<List<StockInfoDto>> GetPopularStocksAsync(int interval);
+    Task<StockDetailsDto?> GetStockDetailsAsync(string ticker, int interval);
 }

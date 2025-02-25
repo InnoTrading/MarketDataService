@@ -1,91 +1,50 @@
-﻿using MarketDataService.Domain.Entities;
+﻿using MarketDataService.Domain.DTOs;
 using MarketDataService.Domain.Interfaces;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace MarketDataService.Infrastructure.Adapters
+namespace MarketDataService.Infrastructure.Adapters;
+
+public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDataAdapter
 {
-    public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDataAdapter
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly string _apiKey = apiKey;
+
+    private readonly List<(string Ticker, string Name)> _popularStocks = new List<(string, string)>
     {
-        private readonly HttpClient _httpClient = httpClient;
-        private readonly string _apiKey = apiKey;
+        ("AAPL", "Apple Inc."),
+        ("MSFT", "Microsoft Corporation"),
+        ("GOOGL", "Alphabet Inc."),
+        ("AMZN", "Amazon.com Inc."),
+        ("TSLA", "Tesla Inc."),
+        ("NVDA", "Nvidia Corporation")
+    };
 
-        private readonly List<(string Ticker, string Name)> _popularStocks = new List<(string, string)>
+    private async Task<HttpResponseMessage> FetchData(string ticker, int interval)
+    {
+        string intervalString = interval + "min";
+        var url = $"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&" +
+                  $"symbol={ticker}&interval={intervalString}&apikey={_apiKey}";
+        var response = await _httpClient.GetAsync(url);
+
+        return response;
+    }
+
+    public async Task<List<StockInfoDto>> GetPopularStocksAsync(int interval = 5)
+    {
+        var result = new List<StockInfoDto>();
+        string intervalString = $"{interval}min";
+
+        foreach (var stock in _popularStocks)
         {
-            ("AAPL", "Apple Inc."),
-            ("MSFT", "Microsoft Corporation"),
-            ("GOOGL", "Alphabet Inc."),
-            ("AMZN", "Amazon.com Inc."),
-            ("TSLA", "Tesla Inc."),
-            ("NVDA", "Nvidia Corporation")
-        };
-
-        private async Task<HttpResponseMessage> FetchData(string ticker, int interval)
-        {
-            string intervalString = interval + "min";
-            var url = $"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&" +
-                      $"symbol={ticker}&interval={intervalString}&apikey={_apiKey}";
-            var response = await _httpClient.GetAsync(url);
-            
-            return response;
-        }
-
-        public async Task<List<StockInfoEntity>> GetPopularStocksAsync(int interval = 5)
-        {
-            var result = new List<StockInfoEntity>();
-
-
-            foreach (var stock in _popularStocks)
-            {
-                var response = await FetchData(stock.Ticker, interval);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string json = await response.Content.ReadAsStringAsync();
-                    using JsonDocument doc = JsonDocument.Parse(json);
-
-                    if (doc.RootElement.TryGetProperty($"Time Series ({interval})", out JsonElement timeSeries))
-                    {
-                        var enumerator = timeSeries.EnumerateObject();
-                        if (enumerator.MoveNext())
-                        {
-                            var latestData = enumerator.Current.Value;
-                            if (latestData.TryGetProperty("4. close", out JsonElement closePriceElement) &&
-                                latestData.TryGetProperty("5. volume", out JsonElement volumeElement))
-                            {
-                                if (decimal.TryParse(closePriceElement.GetString(), out decimal price) &&
-                                    long.TryParse(volumeElement.GetString(), out long volume))
-                                {
-                                    result.Add(new StockInfoEntity
-                                    {
-                                        Ticker = stock.Ticker,
-                                        Name = stock.Name,
-                                        CurrentPrice = price,
-                                        Volume = volume
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return result;
-        }
-
-        public async Task<StockDetailsEntity> GetStockDetailsAsync(string ticker, int interval = 5)
-        {
-            var result = new StockDetailsEntity();
-
-            var response = await FetchData(ticker, interval);
+            var response = await FetchData(stock.Ticker, interval);
 
             if (response.IsSuccessStatusCode)
             {
                 string json = await response.Content.ReadAsStringAsync();
                 using JsonDocument doc = JsonDocument.Parse(json);
 
-                doc.
-
-                if (doc.RootElement.TryGetProperty($"Time Series ({interval})", out JsonElement timeSeries))
+                if (doc.RootElement.TryGetProperty($"Time Series ({intervalString})", out JsonElement timeSeries))
                 {
                     var enumerator = timeSeries.EnumerateObject();
                     if (enumerator.MoveNext())
@@ -97,13 +56,65 @@ namespace MarketDataService.Infrastructure.Adapters
                             if (decimal.TryParse(closePriceElement.GetString(), out decimal price) &&
                                 long.TryParse(volumeElement.GetString(), out long volume))
                             {
-                              
+                                result.Add(new StockInfoDto(
+                                    stock.Ticker,
+                                    stock.Name,
+                                    price,
+                                    volume
+                                ));
                             }
                         }
                     }
                 }
             }
-            return result;
         }
+
+        return result;
     }
+
+    public async Task<StockDetailsDto?> GetStockDetailsAsync(string ticker, int interval = 5)
+    {
+        var response = await FetchData(ticker, interval);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        string json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        string intervalString = $"{interval}min";
+
+        if (!doc.RootElement.TryGetProperty($"Time Series ({intervalString})", out JsonElement timeSeries))
+            return null;
+
+        var dataPoints = timeSeries.EnumerateObject()
+            .Select(entry => ParseDataPoint(entry))
+            .Where(dp => dp != null)
+            .Select(dp => dp!)
+            .ToList();
+
+        return dataPoints.Any() ? new StockDetailsDto(ticker, dataPoints) : null;
+    }
+
+    private StockHistoricalDataPointDto? ParseDataPoint(JsonProperty entry)
+    {
+        if (!DateTime.TryParse(entry.Name, out DateTime dateTimeParsed))
+            return null;
+
+        var data = entry.Value;
+        if (!data.TryGetProperty("1. open", out JsonElement openPriceElement) ||
+            !data.TryGetProperty("2. high", out JsonElement highPriceElement) ||
+            !data.TryGetProperty("3. low", out JsonElement lowPriceElement) ||
+            !data.TryGetProperty("4. close", out JsonElement closePriceElement) ||
+            !data.TryGetProperty("5. volume", out JsonElement volumeElement))
+            return null;
+
+        if (!decimal.TryParse(openPriceElement.GetString(), out decimal openPrice) ||
+            !decimal.TryParse(highPriceElement.GetString(), out decimal highPrice) ||
+            !decimal.TryParse(lowPriceElement.GetString(), out decimal lowPrice) ||
+            !decimal.TryParse(closePriceElement.GetString(), out decimal closePrice) ||
+            !long.TryParse(volumeElement.GetString(), out long volume))
+            return null;
+
+        return new StockHistoricalDataPointDto(dateTimeParsed, openPrice, highPrice, lowPrice, closePrice, volume);
+    }
+
 }
