@@ -1,4 +1,4 @@
-﻿using MarketDataService.Domain.DTOs;
+using MarketDataService.Domain.DTOs;
 using MarketDataService.Domain.Interfaces;
 using System.Text.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -116,5 +116,4 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
 
         return new StockHistoricalDataPointDto(dateTimeParsed, openPrice, highPrice, lowPrice, closePrice, volume);
     }
-
 }

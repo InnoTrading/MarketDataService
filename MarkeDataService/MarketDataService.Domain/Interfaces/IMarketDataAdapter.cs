@@ -1,4 +1,4 @@
-﻿using MarketDataService.Domain.DTOs;
+using MarketDataService.Domain.DTOs;
 
 namespace MarketDataService.Domain.Interfaces;
 
