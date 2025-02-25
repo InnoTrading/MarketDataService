@@ -1,8 +1,9 @@
-﻿namespace MarketDataService.Domain.Entities
-{
-    public class StockHistoricalDataPoint
-    {
-        public DateTime Time { get; set; }
-        public decimal Price { get; set; }
-    }
-}
+﻿namespace MarketDataService.Domain.Entities;
+
+public record StockHistoricalDataPoint(
+    DateTime Time,
+    decimal OpenPrice,
+    decimal HighPrice,
+    decimal LowPrice,
+    decimal ClosePrice,
+    long Volume);
