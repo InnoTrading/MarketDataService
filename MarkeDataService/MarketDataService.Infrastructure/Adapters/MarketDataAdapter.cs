@@ -1,4 +1,4 @@
-﻿using MarketDataService.Domain.Entities;
+using MarketDataService.Domain.DTOs;
 using MarketDataService.Domain.Interfaces;
 using System.Text.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -30,9 +30,9 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
         return response;
     }
 
-    public async Task<List<StockInfoEntity>> GetPopularStocksAsync(int interval = 5)
+    public async Task<List<StockInfoDto>> GetPopularStocksAsync(int interval = 5)
     {
-        var result = new List<StockInfoEntity>();
+        var result = new List<StockInfoDto>();
         string intervalString = $"{interval}min";
 
         foreach (var stock in _popularStocks)
@@ -56,7 +56,7 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
                             if (decimal.TryParse(closePriceElement.GetString(), out decimal price) &&
                                 long.TryParse(volumeElement.GetString(), out long volume))
                             {
-                                result.Add(new StockInfoEntity(
+                                result.Add(new StockInfoDto(
                                     stock.Ticker,
                                     stock.Name,
                                     price,
@@ -72,52 +72,48 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
         return result;
     }
 
-    public async Task<StockDetailsEntity?> GetStockDetailsAsync(string ticker, int interval = 5)
+    public async Task<StockDetailsDto?> GetStockDetailsAsync(string ticker, int interval = 5)
     {
-        var dataPoints = new List<StockHistoricalDataPoint>();
         var response = await FetchData(ticker, interval);
+        if (!response.IsSuccessStatusCode)
+            return null;
 
+        string json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        string intervalString = $"{interval}min";
 
-        if (response.IsSuccessStatusCode)
-        {
-            string json = await response.Content.ReadAsStringAsync();
-            using JsonDocument doc = JsonDocument.Parse(json);
-            string intervalString = $"{interval}min";
+        if (!doc.RootElement.TryGetProperty($"Time Series ({intervalString})", out JsonElement timeSeries))
+            return null;
 
-            if (doc.RootElement.TryGetProperty($"Time Series ({intervalString})", out JsonElement timeSeries))
-            {
-                var enumerator = timeSeries.EnumerateObject();
+        var dataPoints = timeSeries.EnumerateObject()
+            .Select(entry => ParseDataPoint(entry))
+            .Where(dp => dp != null)
+            .Select(dp => dp!)
+            .ToList();
 
-                while (enumerator.MoveNext())
-                {
-                    var data = enumerator.Current.Value;
+        return dataPoints.Any() ? new StockDetailsDto(ticker, dataPoints) : null;
+    }
 
-                    if (data.TryGetProperty("1. open", out JsonElement openPriceElement) &&
-                        data.TryGetProperty("2. high", out JsonElement highPriceElement) &&
-                        data.TryGetProperty("3. low", out JsonElement lowPriceElement) &&
-                        data.TryGetProperty("4. close", out JsonElement closePriceElement) &&
-                        data.TryGetProperty("5. volume", out JsonElement volumeElement))
-                    {
-                        if (decimal.TryParse(openPriceElement.GetString(), out decimal openPrice) &&
-                            decimal.TryParse(highPriceElement.GetString(), out decimal highPrice) &&
-                            decimal.TryParse(lowPriceElement.GetString(), out decimal lowPrice) &&
-                            decimal.TryParse(closePriceElement.GetString(), out decimal closePrice) &&
-                            long.TryParse(volumeElement.GetString(), out long volume))
-                        {
-                            if (DateTime.TryParse(enumerator.Current.Name, out DateTime dateTimeParsed))
-                            {
-                                dataPoints.Add(new StockHistoricalDataPoint(dateTimeParsed, openPrice, highPrice,
-                                    lowPrice, closePrice, volume));
-                            }
-                        }
-                    }
-                }
+    private StockHistoricalDataPointDto? ParseDataPoint(JsonProperty entry)
+    {
+        if (!DateTime.TryParse(entry.Name, out DateTime dateTimeParsed))
+            return null;
 
-                var result = new StockDetailsEntity(ticker, dataPoints);
-                return result;
-            }
-        }
+        var data = entry.Value;
+        if (!data.TryGetProperty("1. open", out JsonElement openPriceElement) ||
+            !data.TryGetProperty("2. high", out JsonElement highPriceElement) ||
+            !data.TryGetProperty("3. low", out JsonElement lowPriceElement) ||
+            !data.TryGetProperty("4. close", out JsonElement closePriceElement) ||
+            !data.TryGetProperty("5. volume", out JsonElement volumeElement))
+            return null;
 
-        return null!;
+        if (!decimal.TryParse(openPriceElement.GetString(), out decimal openPrice) ||
+            !decimal.TryParse(highPriceElement.GetString(), out decimal highPrice) ||
+            !decimal.TryParse(lowPriceElement.GetString(), out decimal lowPrice) ||
+            !decimal.TryParse(closePriceElement.GetString(), out decimal closePrice) ||
+            !long.TryParse(volumeElement.GetString(), out long volume))
+            return null;
+
+        return new StockHistoricalDataPointDto(dateTimeParsed, openPrice, highPrice, lowPrice, closePrice, volume);
     }
 }
