@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UserSecretsId>aa0a26a5-9eb3-44ba-81c6-5e1c32666e04</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MarketDataService.Application\MarketDataService.Application.csproj" />
+    <ProjectReference Include="..\MarketDataService.Infrastructure\MarketDataService.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
