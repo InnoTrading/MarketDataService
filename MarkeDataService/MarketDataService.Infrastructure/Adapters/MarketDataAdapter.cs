@@ -139,5 +139,4 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
             return new StockPriceDto(ticker, price);
         }
     }
-
 }
