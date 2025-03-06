@@ -17,4 +17,9 @@ public class MarketDataService(IMarketDataAdapter marketDataAdapter) : IMarketDa
     {
         return await _marketDataAdapter.GetStockDetailsAsync(ticker, interval);
     }
+
+    public async Task<StockPriceDto> GetActualStockPriceAsync(string ticker)
+    {
+        return await _marketDataAdapter.GetStockActualPriceAsync(ticker);
+    }
 }

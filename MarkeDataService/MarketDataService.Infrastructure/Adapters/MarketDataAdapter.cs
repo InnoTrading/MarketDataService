@@ -1,5 +1,6 @@
 using MarketDataService.Domain.DTOs;
 using MarketDataService.Domain.Interfaces;
+using System.Globalization;
 using System.Text.Json;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -116,4 +117,27 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
 
         return new StockHistoricalDataPointDto(dateTimeParsed, openPrice, highPrice, lowPrice, closePrice, volume);
     }
+
+    public async Task<StockPriceDto> GetStockActualPriceAsync(string ticker)
+    {
+        string url = $"https://finnhub.io/api/v1/quote?symbol={ticker}&token={_apiKey}";
+
+        HttpResponseMessage response = await _httpClient.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+
+        string json = await response.Content.ReadAsStringAsync();
+
+        using (JsonDocument doc = JsonDocument.Parse(json))
+        {
+            if (!doc.RootElement.TryGetProperty("c", out JsonElement currentPriceElement))
+                throw new Exception("Failed to fetch stock data");
+
+            string priceString = currentPriceElement.GetRawText();
+            if (!decimal.TryParse(priceString, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal price))
+                throw new Exception("Failed to parse data.");
+
+            return new StockPriceDto(ticker, price);
+        }
+    }
+
 }
