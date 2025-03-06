@@ -11,10 +11,10 @@ public static class InfrastructureExtensions
         IConfiguration configuration)
     {
         services.AddHttpClient();
-        string apiKey = configuration["AlphaVantage:ApiKey"]!;
+        string apiKey = configuration["FinnHub:ApiKey"]!;
         if (string.IsNullOrEmpty(apiKey))
         {
-            throw new Exception("Api key not found AlphaVantage:ApiKey");
+            throw new Exception("Api key not found FinnHub:ApiKey");
         }
 
         services.AddScoped<IMarketDataAdapter>(sp =>
