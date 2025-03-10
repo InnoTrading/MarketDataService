@@ -30,4 +30,14 @@ public class MarketDataController(IMarketDataService marketDataService) : Contro
 
         return Ok(result);
     }
+
+    [HttpGet("price/{ticker}")]
+    public async Task<IActionResult> GetActualPriceAsync(string ticker)
+    {
+        var result = await _marketDataService.GetActualStockPriceAsync(ticker);
+        if(result == null)
+            return NotFound();
+        
+        return Ok(result);
+    }
 }
