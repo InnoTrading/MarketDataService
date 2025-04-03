@@ -161,8 +161,8 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
                     var description = descriptionElement.GetString()!;
                     var symbol = symbolElement.GetString()!;
 
-                    // Jeœli filtr jest pusty, zwracamy wszystkie pozycje
-                    // lub sprawdzamy, czy filtr wystêpuje w opisie lub symbolu (ignoruj¹c wielkoœæ liter)
+                    // Jeï¿½li filtr jest pusty, zwracamy wszystkie pozycje
+                    // lub sprawdzamy, czy filtr wystï¿½puje w opisie lub symbolu (ignorujï¿½c wielkoï¿½ï¿½ liter)
                     if (string.IsNullOrWhiteSpace(filter) ||
                         description.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
                         symbol.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
