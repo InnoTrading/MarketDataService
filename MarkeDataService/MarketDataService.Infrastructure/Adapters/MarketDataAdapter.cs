@@ -139,5 +139,41 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
             return new StockPriceDto(ticker, price);
         }
     }
+    public async Task<List<StockNameDto>> GetStocksByFilter(string filter)
+    {
+        string exchange = "US";
+        string url = $"https://finnhub.io/api/v1/stock/symbol?exchange={exchange}&token={_apiKey}";
+
+        var result = new List<StockNameDto>();
+
+        HttpResponseMessage response = await _httpClient.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+
+        string json = await response.Content.ReadAsStringAsync();
+
+        using (JsonDocument doc = JsonDocument.Parse(json))
+        {
+            foreach (JsonElement element in doc.RootElement.EnumerateArray())
+            {
+                if (element.TryGetProperty("description", out JsonElement descriptionElement) &&
+                    element.TryGetProperty("symbol", out JsonElement symbolElement))
+                {
+                    var description = descriptionElement.GetString()!;
+                    var symbol = symbolElement.GetString()!;
+
+                    // Jeœli filtr jest pusty, zwracamy wszystkie pozycje
+                    // lub sprawdzamy, czy filtr wystêpuje w opisie lub symbolu (ignoruj¹c wielkoœæ liter)
+                    if (string.IsNullOrWhiteSpace(filter) ||
+                        description.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                        symbol.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        result.Add(new StockNameDto(description, symbol));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
 
 }
