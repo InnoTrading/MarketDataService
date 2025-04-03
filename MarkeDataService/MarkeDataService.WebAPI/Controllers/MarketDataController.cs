@@ -40,4 +40,14 @@ public class MarketDataController(IMarketDataService marketDataService) : Contro
         
         return Ok(result);
     }
+
+    [HttpGet("stocks")]
+    public async Task<IActionResult> GetStocksByFilter([FromQuery] string filter)
+    {
+        var result = await _marketDataService.GetStocksByFilter(filter);
+        if(result.Any())
+            return Ok(result);
+
+        return NotFound();
+    }
 }
