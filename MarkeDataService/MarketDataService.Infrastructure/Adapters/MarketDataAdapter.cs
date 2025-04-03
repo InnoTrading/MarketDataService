@@ -139,6 +139,7 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
             return new StockPriceDto(ticker, price);
         }
     }
+
     public async Task<List<StockNameDto>> GetStocksByFilter(string filter)
     {
         string exchange = "US";
@@ -160,6 +161,7 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
                 {
                     var description = descriptionElement.GetString()!;
                     var symbol = symbolElement.GetString()!;
+
 
                     if (string.IsNullOrWhiteSpace(filter) ||
                         description.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
