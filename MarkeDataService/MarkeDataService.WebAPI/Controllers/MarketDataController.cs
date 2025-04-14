@@ -1,5 +1,8 @@
 ﻿using MarketDataService.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Threading;
+using YahooFinanceApi;
 
 namespace MarketDataService.WebAPI.Controllers;
 
@@ -32,13 +35,24 @@ public class MarketDataController(IMarketDataService marketDataService) : Contro
     }
 
     [HttpGet("price/{ticker}")]
-    public async Task<IActionResult> GetActualPriceAsync(string ticker)
+    public async Task GetActualPriceAsync(CancellationToken cancellationToken, string ticker)
     {
-        var result = await _marketDataService.GetActualStockPriceAsync(ticker);
-        if(result == null)
-            return NotFound();
-        
-        return Ok(result);
+        Response.Headers.Append("Content-Type", "text/event-stream");
+        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Connection", "keep-alive");
+
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            var currentPrice = await _marketDataService.GetActualStockPriceAsync(ticker);
+
+            var jsonData = JsonConvert.SerializeObject(new { price = currentPrice });
+
+            await Response.WriteAsync($"data: {jsonData}\n\n");
+
+            await Response.Body.FlushAsync();
+
+            await Task.Delay(500, cancellationToken);
+        }
     }
 
     [HttpGet("stocks")]

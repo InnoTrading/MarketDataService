@@ -2,6 +2,7 @@ using MarketDataService.Domain.DTOs;
 using MarketDataService.Domain.Interfaces;
 using System.Globalization;
 using System.Text.Json;
+using YahooFinanceApi;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MarketDataService.Infrastructure.Adapters;
@@ -117,27 +118,27 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
 
         return new StockHistoricalDataPointDto(dateTimeParsed, openPrice, highPrice, lowPrice, closePrice, volume);
     }
-
-    public async Task<StockPriceDto> GetStockActualPriceAsync(string ticker)
+    //Uses yahoo finanse api library
+    public async Task<double> GetStockActualPriceAsync(string ticker)
     {
-        string url = $"https://finnhub.io/api/v1/quote?symbol={ticker}&token={_apiKey}";
-
-        HttpResponseMessage response = await _httpClient.GetAsync(url);
-        response.EnsureSuccessStatusCode();
-
-        string json = await response.Content.ReadAsStringAsync();
-
-        using (JsonDocument doc = JsonDocument.Parse(json))
+        
+        try
         {
-            if (!doc.RootElement.TryGetProperty("c", out JsonElement currentPriceElement))
-                throw new Exception("Failed to fetch stock data");
+            var securities = await Yahoo.Symbols(ticker)
+                                        .Fields(Field.Symbol, Field.RegularMarketPrice)
+                                        .QueryAsync();
 
-            string priceString = currentPriceElement.GetRawText();
-            if (!decimal.TryParse(priceString, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal price))
-                throw new Exception("Failed to parse data.");
+            var quote = securities[ticker];
 
-            return new StockPriceDto(ticker, price);
+            Console.WriteLine($"Actual price: {quote[Field.Symbol]} is: {quote[Field.RegularMarketPrice]}");
+            
+            return quote[Field.RegularMarketPrice];
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine("An error occured during fetching stock price: " + ex.Message);
+        }
+        return -1;
     }
     public async Task<List<StockNameDto>> GetStocksByFilter(string filter)
     {
@@ -172,6 +173,6 @@ public class MarketDataAdapter(HttpClient httpClient, string apiKey) : IMarketDa
         }
         return result;
     }
-
+    
 
 }

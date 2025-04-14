@@ -6,6 +6,6 @@ public interface IMarketDataService
 {
     Task<List<StockInfoDto>> GetPopularStocksAsync(int interval);
     Task<StockDetailsDto?> GetStockDetailsAsync(string ticker, int interval);
-    Task<StockPriceDto> GetActualStockPriceAsync(string ticker);
+    Task<double> GetActualStockPriceAsync(string ticker);
     Task<List<StockNameDto>> GetStocksByFilter(string filter);
 }
